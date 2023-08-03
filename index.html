@@ -7,16 +7,85 @@
       margin: 0;
       overflow: hidden;
     }
+    #moonButton {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 50px;
+      height: 50px;
+      background-image: url('moon.png');
+      background-size: cover;
+      cursor: pointer;
+    }
+    #moonButton.back {
+      background-image: url('moon-back.png');
+    }
   </style>
 </head>
 <body>
+    <div id="moonButton"></div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    let scene, camera, renderer, textMesh, tori;
+    let scene, camera, renderer, textMesh, tori, orbitSphere;
     let textRotationIncrements = new THREE.Vector3();
     let targetTextRotationIncrements = new THREE.Vector3();
 
-    // Function to create the rotating text
+    let orbitRotationIncrements = new THREE.Vector3();
+    let targetOrbitRotationIncrements = new THREE.Vector3();
+    let isOrbitSphereCreated = false;
+
+    let prevTextRotation = new THREE.Vector3();
+
+    let isFocusedOnMoon = false; // Flag to check if the camera is focused on the moon
+
+    // Function to focus the camera on the moon
+    function focusOnMoon() {
+    const cameraOffset = new THREE.Vector3(0, 2, 1); // Set the camera offset relative to the moon
+    const moonPosition = orbitSphere.getWorldPosition(new THREE.Vector3());
+    camera.position.copy(moonPosition).add(cameraOffset);
+    camera.lookAt(moonPosition);
+    }
+
+    // Function to rotate the moon when the user clicks and drags
+function rotateMoon(event) {
+  if (!isFocusedOnMoon) return;
+
+  const rotationSpeed = 0.005;
+  orbitSphere.rotation.y += event.movementX * rotationSpeed;
+  orbitSphere.rotation.x += event.movementY * rotationSpeed;
+}
+
+// Event listener for mouse down event on the orbitSphere (moon)
+document.addEventListener('mousedown', () => {
+  if (isFocusedOnMoon) {
+    document.addEventListener('mousemove', rotateMoon);
+  }
+});
+
+// Event listener for mouse up event
+document.addEventListener('mouseup', () => {
+  document.removeEventListener('mousemove', rotateMoon);
+});
+
+    // Function to return the camera to its original position
+function returnToOriginalPosition() {
+  camera.position.set(0, 5, 20);
+  camera.lookAt(new THREE.Vector3(0, 5, 0));
+}
+
+    const moonButton = document.getElementById('moonButton');
+    moonButton.addEventListener('click', () => {
+    if (!isFocusedOnMoon) {
+        focusOnMoon();
+        moonButton.classList.add('back');
+    } else {
+        returnToOriginalPosition();
+        moonButton.classList.remove('back');
+    }
+    isFocusedOnMoon = !isFocusedOnMoon;
+    });
+
     function createText() {
       const loader = new THREE.FontLoader();
       loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
@@ -26,7 +95,6 @@
           height: 0.5,
         });
 
-        // Center the text geometry
         textGeometry.computeBoundingBox();
         const centerOffset = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
         textGeometry.translate(centerOffset, 0, 0);
@@ -34,12 +102,17 @@
         const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
         textMesh = new THREE.Mesh(textGeometry, textMaterial);
         textMesh.position.set(0, 5, 0);
-        textMesh.castShadow = true; // Enable shadow casting for the text
+        textMesh.castShadow = true;
         scene.add(textMesh);
+
+        textMesh.addEventListener('click', () => {
+          console.log("You clicked me!");
+        });
+
+        createOrbitSphere();
       });
     }
 
-    // Function to create a torus with random properties
     function createTorus() {
       const radius = 0.5;
       const tubeRadius = 0.15;
@@ -56,24 +129,39 @@
       const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
       const torus = new THREE.Mesh(geometry, material);
 
-      // Randomize torus position
       torus.position.x = Math.random() * 10 - 5;
-      torus.position.y = 50; // Adjust the spawn height here (higher value means higher spawn point)
+      torus.position.y = 50;
       torus.position.z = Math.random() * 10 - 5;
 
-      // Randomize torus initial velocity (x and z components)
       torus.velocity = new THREE.Vector3(Math.random() - 0.5, -1, Math.random() - 0.5).normalize().multiplyScalar(0.1);
 
-      // Randomize torus rotation speed (angular velocity)
       torus.rotationVelocity = new THREE.Vector3(
         Math.random() * 0.1 - 0.05,
         Math.random() * 0.1 - 0.05,
         Math.random() * 0.1 - 0.05
       );
 
-      torus.castShadow = true; // Enable shadow casting for the torus
+      torus.castShadow = true;
       scene.add(torus);
       tori.push(torus);
+    }
+
+    function createOrbitSphere() {
+      const geometry = new THREE.SphereGeometry(1, 32, 32);
+      // Load the moon texture image
+      const textureLoader = new THREE.TextureLoader();
+      const texture = textureLoader.load('moon.jpg');
+      // Apply the texture to the material
+      const material = new THREE.MeshPhongMaterial({ map: texture });
+
+      orbitSphere = new THREE.Mesh(geometry, material);
+      orbitSphere.position.set(5, 5, 0);
+      textMesh.add(orbitSphere);
+
+      // Make the moon rotate in one direction like the real moon
+      orbitRotationIncrements.set(0, 0.01, 0);
+
+      isOrbitSphereCreated = true; // Set the flag to true after creating the orbitSphere
     }
 
     function init() {
@@ -87,13 +175,12 @@
 
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.shadowMap.enabled = true; // Enable shadow mapping
+      renderer.shadowMap.enabled = true;
       document.body.appendChild(renderer.domElement);
 
       createText();
       tori = [];
 
-      // Add lights for better visibility and shadows
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
       scene.add(ambientLight);
 
@@ -101,13 +188,11 @@
       pointLight.position.set(10, 10, 10);
       scene.add(pointLight);
 
-      // Add a directional light for casting shadows
       const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
       directionalLight.position.set(5, 10, -5);
-      directionalLight.castShadow = true; // Enable shadow casting for the light
+      directionalLight.castShadow = true;
       scene.add(directionalLight);
 
-      // Set up shadow properties for the directional light
       directionalLight.shadow.mapSize.width = 1024;
       directionalLight.shadow.mapSize.height = 1024;
       directionalLight.shadow.camera.near = 0.5;
@@ -124,7 +209,10 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      // Randomize text rotation increments
+      if (isOrbitSphereCreated) {
+        updateOrbit();
+      }
+
       if (textMesh) {
         if (Math.random() < 0.01) {
           targetTextRotationIncrements.x = (Math.random() - 0.5) * 0.03;
@@ -132,8 +220,7 @@
           targetTextRotationIncrements.z = (Math.random() - 0.5) * 0.03;
         }
 
-        // Smoothly interpolate text rotation increments
-        const lerpFactor = 0.1;
+        const lerpFactor = 0.01;
         textRotationIncrements.x = THREE.MathUtils.lerp(
           textRotationIncrements.x,
           targetTextRotationIncrements.x,
@@ -155,33 +242,96 @@
         textMesh.rotation.z += textRotationIncrements.z;
       }
 
-      // Update torus positions and rotations, and remove toruses below the user's view
       for (let i = tori.length - 1; i >= 0; i--) {
         const torus = tori[i];
         torus.position.add(torus.velocity);
 
-        // Apply rotational velocity
         torus.rotation.x += torus.rotationVelocity.x;
         torus.rotation.y += torus.rotationVelocity.y;
         torus.rotation.z += torus.rotationVelocity.z;
 
-        if (torus.position.y < -50) { // Adjust the despawn threshold here (lower value means longer lifespan)
-          // Remove the torus from the scene and tori array
+        if (torus.position.y < -100) {
           scene.remove(torus);
           tori.splice(i, 1);
         }
       }
 
-      // Add a new torus at random intervals
       if (Math.random() < 0.02) {
         createTorus();
       }
 
+      if (isFocusedOnMoon) {
+            focusOnMoon();
+        }
+
       renderer.render(scene, camera);
+    }
+
+    function updateOrbit() {
+    // Delay or lag factor for the moon's orbit (0: no delay, 1: complete delay)
+    const orbitLagFactor = 0.3;
+
+    // Store the previous text rotation
+    const prevTextRotationX = prevTextRotation.x;
+    const prevTextRotationY = prevTextRotation.y;
+    const prevTextRotationZ = prevTextRotation.z;
+
+    // Update the previous text rotation with the current text rotation
+    prevTextRotation.copy(textRotationIncrements);
+
+    // Calculate the difference between the current and previous text rotation
+    const textRotationDiffX = textRotationIncrements.x - prevTextRotationX;
+    const textRotationDiffY = textRotationIncrements.y - prevTextRotationY;
+    const textRotationDiffZ = textRotationIncrements.z - prevTextRotationZ;
+
+    // Apply lag effect to the moon's orbit based on the difference
+    orbitRotationIncrements.x -= textRotationDiffX * orbitLagFactor;
+    orbitRotationIncrements.y -= textRotationDiffY * orbitLagFactor;
+    orbitRotationIncrements.z -= textRotationDiffZ * orbitLagFactor;
+
+    // Gradual change in the moon's orbit
+    const lerpFactor = 0.1;
+    orbitRotationIncrements.x = THREE.MathUtils.lerp(
+        orbitRotationIncrements.x,
+        targetOrbitRotationIncrements.x,
+        lerpFactor
+    );
+    orbitRotationIncrements.y = THREE.MathUtils.lerp(
+        orbitRotationIncrements.y,
+        targetOrbitRotationIncrements.y,
+        lerpFactor
+    );
+    orbitRotationIncrements.z = THREE.MathUtils.lerp(
+        orbitRotationIncrements.z,
+        targetOrbitRotationIncrements.z,
+        lerpFactor
+    );
+
+    orbitSphere.rotation.x += orbitRotationIncrements.x;
+    orbitSphere.rotation.y += orbitRotationIncrements.y;
+    orbitSphere.rotation.z += orbitRotationIncrements.z;
+
+    const xRadius = 15;
+    const yRadius = 5;
+    const orbitalSpeed = 0.0005;
+
+    orbitSphere.position.x = xRadius * Math.cos(orbitalSpeed * Date.now());
+    orbitSphere.position.y = yRadius * Math.sin(orbitalSpeed * Date.now());
+    }
+
+    function smoothStep(start, end, amount) {
+      return start + (end - start) * amount;
     }
 
     init();
     animate();
+
+    // Print "You clicked me!" when clicking the moon
+    if (orbitSphere) {
+      orbitSphere.addEventListener('click', () => {
+        console.log("You clicked me!");
+      });
+    }
   </script>
 </body>
 </html>
