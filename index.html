@@ -14,6 +14,7 @@
   <script>
     let scene, camera, renderer, textMesh, tori;
     let textRotationIncrements = new THREE.Vector3();
+    let targetTextRotationIncrements = new THREE.Vector3();
 
     // Function to create the rotating text
     function createText() {
@@ -107,10 +108,28 @@
       // Randomize text rotation increments
       if (textMesh) {
         if (Math.random() < 0.01) {
-          textRotationIncrements.x = (Math.random() - 0.5) * 0.03;
-          textRotationIncrements.y = (Math.random() - 0.5) * 0.03;
-          textRotationIncrements.z = (Math.random() - 0.5) * 0.03;
+          targetTextRotationIncrements.x = (Math.random() - 0.5) * 0.03;
+          targetTextRotationIncrements.y = (Math.random() - 0.5) * 0.03;
+          targetTextRotationIncrements.z = (Math.random() - 0.5) * 0.03;
         }
+
+        // Smoothly interpolate text rotation increments
+        const lerpFactor = 0.1;
+        textRotationIncrements.x = THREE.MathUtils.lerp(
+          textRotationIncrements.x,
+          targetTextRotationIncrements.x,
+          lerpFactor
+        );
+        textRotationIncrements.y = THREE.MathUtils.lerp(
+          textRotationIncrements.y,
+          targetTextRotationIncrements.y,
+          lerpFactor
+        );
+        textRotationIncrements.z = THREE.MathUtils.lerp(
+          textRotationIncrements.z,
+          targetTextRotationIncrements.z,
+          lerpFactor
+        );
 
         textMesh.rotation.x += textRotationIncrements.x;
         textMesh.rotation.y += textRotationIncrements.y;
