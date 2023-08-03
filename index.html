@@ -31,9 +31,10 @@
         const centerOffset = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
         textGeometry.translate(centerOffset, 0, 0);
 
-        const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
         textMesh = new THREE.Mesh(textGeometry, textMaterial);
         textMesh.position.set(0, 5, 0);
+        textMesh.castShadow = true; // Enable shadow casting for the text
         scene.add(textMesh);
       });
     }
@@ -52,7 +53,7 @@
         tubularSegments
       );
 
-      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
       const torus = new THREE.Mesh(geometry, material);
 
       // Randomize torus position
@@ -70,6 +71,7 @@
         Math.random() * 0.1 - 0.05
       );
 
+      torus.castShadow = true; // Enable shadow casting for the torus
       scene.add(torus);
       tori.push(torus);
     }
@@ -85,18 +87,35 @@
 
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true; // Enable shadow mapping
       document.body.appendChild(renderer.domElement);
 
       createText();
       tori = [];
 
-      // Add lights for better visibility
+      // Add lights for better visibility and shadows
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
       scene.add(ambientLight);
 
       const pointLight = new THREE.PointLight(0xffffff, 1);
       pointLight.position.set(10, 10, 10);
       scene.add(pointLight);
+
+      // Add a directional light for casting shadows
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+      directionalLight.position.set(5, 10, -5);
+      directionalLight.castShadow = true; // Enable shadow casting for the light
+      scene.add(directionalLight);
+
+      // Set up shadow properties for the directional light
+      directionalLight.shadow.mapSize.width = 1024;
+      directionalLight.shadow.mapSize.height = 1024;
+      directionalLight.shadow.camera.near = 0.5;
+      directionalLight.shadow.camera.far = 50;
+      directionalLight.shadow.camera.left = -15;
+      directionalLight.shadow.camera.right = 15;
+      directionalLight.shadow.camera.top = 15;
+      directionalLight.shadow.camera.bottom = -15;
 
       camera.position.z = 20;
       camera.position.y = 5;
@@ -136,7 +155,7 @@
         textMesh.rotation.z += textRotationIncrements.z;
       }
 
-      // Update torus positions and rotations, and remove toruses below user's view
+      // Update torus positions and rotations, and remove toruses below the user's view
       for (let i = tori.length - 1; i >= 0; i--) {
         const torus = tori[i];
         torus.position.add(torus.velocity);
@@ -153,7 +172,7 @@
         }
       }
 
-      // Add new torus at random intervals
+      // Add a new torus at random intervals
       if (Math.random() < 0.02) {
         createTorus();
       }
