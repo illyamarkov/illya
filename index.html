@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Three.js Environment</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    let scene, camera, renderer, textMesh, tori;
+    let textRotationIncrements = new THREE.Vector3();
+
+    // Function to create the rotating text
+    function createText() {
+      const loader = new THREE.FontLoader();
+      loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+        const textGeometry = new THREE.TextGeometry("Hey! I'm Illya!", {
+          font: font,
+          size: 2,
+          height: 0.5,
+        });
+
+        // Center the text geometry
+        textGeometry.computeBoundingBox();
+        const centerOffset = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
+        textGeometry.translate(centerOffset, 0, 0);
+
+        const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        textMesh.position.set(0, 5, 0);
+        scene.add(textMesh);
+      });
+    }
+
+    // Function to create a torus with random properties
+    function createTorus() {
+      const radius = 0.5;
+      const tubeRadius = 0.15;
+      const radialSegments = 8;
+      const tubularSegments = 24;
+
+      const geometry = new THREE.TorusGeometry(
+        radius,
+        tubeRadius,
+        radialSegments,
+        tubularSegments
+      );
+
+      const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const torus = new THREE.Mesh(geometry, material);
+
+      // Randomize torus position
+      torus.position.x = Math.random() * 10 - 5;
+      torus.position.y = 50; // Adjust the spawn height here (higher value means higher spawn point)
+      torus.position.z = Math.random() * 10 - 5;
+
+      // Randomize torus initial velocity (x and z components)
+      torus.velocity = new THREE.Vector3(Math.random() - 0.5, -1, Math.random() - 0.5).normalize().multiplyScalar(0.1);
+
+      // Randomize torus rotation speed (angular velocity)
+      torus.rotationVelocity = new THREE.Vector3(
+        Math.random() * 0.1 - 0.05,
+        Math.random() * 0.1 - 0.05,
+        Math.random() * 0.1 - 0.05
+      );
+
+      scene.add(torus);
+      tori.push(torus);
+    }
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100
+      );
+
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      createText();
+      tori = [];
+
+      // Add lights for better visibility
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+      scene.add(ambientLight);
+
+      const pointLight = new THREE.PointLight(0xffffff, 1);
+      pointLight.position.set(10, 10, 10);
+      scene.add(pointLight);
+
+      camera.position.z = 20;
+      camera.position.y = 5;
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Randomize text rotation increments
+      if (textMesh) {
+        if (Math.random() < 0.01) {
+          textRotationIncrements.x = (Math.random() - 0.5) * 0.03;
+          textRotationIncrements.y = (Math.random() - 0.5) * 0.03;
+          textRotationIncrements.z = (Math.random() - 0.5) * 0.03;
+        }
+
+        textMesh.rotation.x += textRotationIncrements.x;
+        textMesh.rotation.y += textRotationIncrements.y;
+        textMesh.rotation.z += textRotationIncrements.z;
+      }
+
+      // Update torus positions and rotations, and remove toruses below user's view
+      for (let i = tori.length - 1; i >= 0; i--) {
+        const torus = tori[i];
+        torus.position.add(torus.velocity);
+
+        // Apply rotational velocity
+        torus.rotation.x += torus.rotationVelocity.x;
+        torus.rotation.y += torus.rotationVelocity.y;
+        torus.rotation.z += torus.rotationVelocity.z;
+
+        if (torus.position.y < -50) { // Adjust the despawn threshold here (lower value means longer lifespan)
+          // Remove the torus from the scene and tori array
+          scene.remove(torus);
+          tori.splice(i, 1);
+        }
+      }
+
+      // Add new torus at random intervals
+      if (Math.random() < 0.02) {
+        createTorus();
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    init();
+    animate();
+  </script>
+</body>
+</html>
