@@ -1,0 +1,19 @@
+{
+  "files": {
+    "main.css": "/illya/static/css/main.f2a9d405.css",
+    "main.js": "/illya/static/js/main.b1d9c457.js",
+    "static/js/453.1407b060.chunk.js": "/illya/static/js/453.1407b060.chunk.js",
+    "static/media/star.md": "/illya/static/media/star.98c6c72bd905b9423dbc.md",
+    "static/media/club.md": "/illya/static/media/club.ce70972a7ae2b7ea3603.md",
+    "static/media/1024.md": "/illya/static/media/1024.91a8f95cecef0944cc2f.md",
+    "static/media/grow.md": "/illya/static/media/grow.3ab7a5645fb244297a17.md",
+    "index.html": "/illya/index.html",
+    "main.f2a9d405.css.map": "/illya/static/css/main.f2a9d405.css.map",
+    "main.b1d9c457.js.map": "/illya/static/js/main.b1d9c457.js.map",
+    "453.1407b060.chunk.js.map": "/illya/static/js/453.1407b060.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f2a9d405.css",
+    "static/js/main.b1d9c457.js"
+  ]
+}
