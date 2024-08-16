@@ -1,9 +1,10 @@
 ---
 id: 4
-name: Grow
+name: !!!Grow
 orbitSpeed: 30
 color: #FF5733
 radius: 10
+category: IllyaDrop
 ---
 
 # Grow

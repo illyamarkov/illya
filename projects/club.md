@@ -5,6 +5,7 @@ orbitSpeed: 30
 color: #FF00FF
 radius: 5
 orbitCCW: false
+category: IllyaDrop
 ---
 
 # CLUB
